@@ -2,30 +2,26 @@ from .canvas import Canvas
 import math
 import random
 
-BLACK=1
-WHITE=2
+# 定数定義
+BLACK = 1
+WHITE = 2
 
+# 初期盤面
 board = [
-        [0,0,0,0,0,0],
-        [0,0,0,0,0,0],
-        [0,0,1,2,0,0],
-        [0,0,2,1,0,0],
-        [0,0,0,0,0,0],
-        [0,0,0,0,0,0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 2, 0, 0],
+    [0, 0, 2, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
 ]
 
+# 石を置けるか確認する関数
 def can_place_x_y(board, stone, x, y):
-    """
-    石を置けるかどうかを調べる関数。
-    board: 2次元配列のオセロボード
-    x, y: 石を置きたい座標 (0-indexed)
-    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
-    return: 置けるなら True, 置けないなら False
-    """
     if board[y][x] != 0:
-        return False  # 既に石がある場合は置けない
+        return False
 
-    opponent = 3 - stone  # 相手の石 (1なら2、2なら1)
+    opponent = 3 - stone
     directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
     for dx, dy in directions:
@@ -38,59 +34,40 @@ def can_place_x_y(board, stone, x, y):
             found_opponent = True
 
         if found_opponent and 0 <= nx < len(board[0]) and 0 <= ny < len(board) and board[ny][nx] == stone:
-            return True  # 石を置ける条件を満たす
+            return True
 
     return False
 
+# 石を置ける場所があるか確認
 def can_place(board, stone):
-    """
-    石を置ける場所を調べる関数。
-    board: 2次元配列のオセロボード
-    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
-    """
     for y in range(len(board)):
         for x in range(len(board[0])):
             if can_place_x_y(board, stone, x, y):
                 return True
     return False
 
+# ランダムに石を置く関数
 def random_place(board, stone):
-    """
-    石をランダムに置く関数。
-    board: 2次元配列のオセロボード
-    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
-    """
     while True:
         x = random.randint(0, len(board[0]) - 1)
         y = random.randint(0, len(board) - 1)
         if can_place_x_y(board, stone, x, y):
             return x, y
 
+# 盤面をコピーする関数
 def copy(board):
-    """
-    盤面をコピーする関数。
-    board: 2次元配列のオセロボード
-    """
     return [row[:] for row in board]
 
-
+# 石を置き、ひっくり返す関数
 def move_stone(board, stone, x, y):
-    """
-    石を置き、ひっくり返す関数。
-    board: 2次元配列のオセロボード
-    x, y: 石を置きたい座標 (0-indexed)
-    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
-    return:
-    """
-    moves = [copy(board)]*3
+    moves = [copy(board)]
     if not can_place_x_y(board, stone, x, y):
-        return moves  # 置けない場合は何もしない
+        return moves
 
-    board[y][x] = stone  # 石を置く
+    board[y][x] = stone
     moves.append(copy(board))
     opponent = 3 - stone
     directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-    flipped_count = 0
 
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
@@ -105,13 +82,11 @@ def move_stone(board, stone, x, y):
             for flip_x, flip_y in stones_to_flip:
                 board[flip_y][flip_x] = stone
                 moves.append(copy(board))
-                flipped_count += 1
 
     return moves
 
-
+# PandaAIクラス
 class PandaAI(object):
-
     def face(self):
         return "🐼"
 
@@ -119,84 +94,71 @@ class PandaAI(object):
         x, y = random_place(board, stone)
         return x, y
 
-
+# ボードを描画する関数
 def draw_board(canvas, board):
     ctx = canvas.getContext("2d")
-    grid = width // len(board)
-    for y, line in enumerate(board):
-        for x, stone in enumerate(line):
+    grid = canvas.width // len(board)
+    for y, row in enumerate(board):
+        for x, stone in enumerate(row):
             cx = x * grid + grid // 2
             cy = y * grid + grid // 2
+            ctx.fillStyle = "green"
+            ctx.fillRect(x * grid, y * grid, grid, grid)
             if stone != 0:
                 ctx.beginPath()
-                ctx.arc(cx, cy, grid//2, 0, 2 * math.pi) # 円の描画
-                ctx.fillStyle = "black" if stone == 1 else "white"
+                ctx.arc(cx, cy, grid // 3, 0, 2 * math.pi)
+                ctx.fillStyle = "black" if stone == BLACK else "white"
                 ctx.fill()
 
-width=300
-
-def draw_board_moves(canvas, moves):
-    for board in moves:
-        draw_board(canvas, board)
-
-def play_othello(ai=None, board=None):
+# AI同士の対戦を行う関数
+def ai_vs_ai(ai_black, ai_white, board=None):
     if board is None:
         board = [
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0],
-            [0,0,1,2,0,0],
-            [0,0,2,1,0,0],
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 2, 0, 0],
+            [0, 0, 2, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
         ]
-    if ai is None:
-        ai = PandaAI()
 
-    def redraw(canvas, x, y):
-        nonlocal board, ai
-        N = len(board)
-        grid = width // N
-        x = x // grid
-        y = y // grid
-        if not can_place_x_y(board, BLACK, x, y):
-            print('そこに置けません', (x, y))
-            return
-
-        moves = []
-        moves.extend(move_stone(board, BLACK, x, y))
-
-        if can_place(board, WHITE):
-            x, y = ai.place(board, WHITE)
-            if not can_place_x_y(board, WHITE, x, y):
-                print(f'{ai.face()}は、置けないところに置こうとしました', (x, y))
-                print('反則負けです')
-                return
-            print(f'{ai.face()}は', (x, y), 'におきました。')
-            moves.extend(move_stone(board, WHITE, x, y))
-        else:
-            print(f'{ai.face()}はどこにも置けないのでスキップします')
-
-        while not can_place(board, BLACK):
-            if can_place(board, WHITE):
-                print(f'あなたはどこにも置けないのでスキップします')
-                x, y = ai.place(board, WHITE)
-                print(f'{ai.face()}は', (x, y), 'におきました。')
-                moves.extend(move_stone(board, WHITE, x, y))
-            else:
-                black = sum(row.count(BLACK) for row in board)
-                white = sum(row.count(WHITE) for row in board)
-                print(f'黒: {black}, 白: {white}', end=' ')
-                if black > white:
-                    print('黒の勝ち')
-                elif black < white:
-                    print('白の勝ち')
-                else:
-                    print('引き分け')
-                break
-        draw_board_moves(canvas, moves)
-
-
-    canvas = Canvas(background='green', grid=width//6, width=width, height=width, onclick=redraw)
+    canvas = Canvas(background="green", grid=300 // 6, width=300, height=300)
     draw_board(canvas, board)
 
+    current_player = BLACK
+    ai = {BLACK: ai_black, WHITE: ai_white}
+
+    while True:
+        if can_place(board, current_player):
+            x, y = ai[current_player].place(board, current_player)
+            if not can_place_x_y(board, current_player, x, y):
+                print(f"AI {ai[current_player].face()} が無効な場所に置こうとしました: ({x}, {y})")
+                print(f"AI {ai[current_player].face()} の反則負けです！")
+                break
+            move_stone(board, current_player, x, y)
+            print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+        else:
+            print(f"AI {ai[current_player].face()} は置ける場所がありません: スキップ")
+
+        if not can_place(board, BLACK) and not can_place(board, WHITE):
+            black_score = sum(row.count(BLACK) for row in board)
+            white_score = sum(row.count(WHITE) for row in board)
+            print(f"ゲーム終了！黒: {black_score}, 白: {white_score}")
+            if black_score > white_score:
+                print("黒の勝利！")
+            elif black_score < white_score:
+                print("白の勝利！")
+            else:
+                print("引き分け！")
+            break
+
+        current_player = 3 - current_player
+        draw_board(canvas, board)
+
     display(canvas)
+
+# メイン関数
+if __name__ == "__main__":
+    ai_black = PandaAI()
+    ai_white = PandaAI()
+    ai_vs_ai(ai_black, ai_white)
