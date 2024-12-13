@@ -129,19 +129,21 @@ def ai_vs_ai(ai_black, ai_white, board=None):
     current_player = BLACK
     ai = {BLACK: ai_black, WHITE: ai_white}
 
-    while True:
+     while True:
+        # 現在のプレイヤーが石を置けるか確認
         if can_place(board, current_player):
-            x, y = ai[current_player].place(board, current_player)
-            if not can_place_x_y(board, current_player, x, y):
-                print(f"AI {ai[current_player].face()} が無効な場所に置こうとしました: ({x}, {y})")
-                print(f"AI {ai[current_player].face()} の反則負けです！")
-                break
-            move_stone(board, current_player, x, y)
-            print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+            move = ai[current_player].place(board, current_player)
+            if move is not None:
+                x, y = move
+                move_stone(board, current_player, x, y)
+                print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+                draw_board(canvas, board)
         else:
-            print(f"AI {ai[current_player].face()} は置ける場所がありません: スキップ")
+            print(f"AI {ai[current_player].face()} は置ける場所がないためスキップします")
 
+        # ゲーム終了条件の確認
         if not can_place(board, BLACK) and not can_place(board, WHITE):
+            draw_board(canvas, board)  # 最後の状態を描画
             black_score = sum(row.count(BLACK) for row in board)
             white_score = sum(row.count(WHITE) for row in board)
             print(f"ゲーム終了！黒: {black_score}, 白: {white_score}")
@@ -153,8 +155,8 @@ def ai_vs_ai(ai_black, ai_white, board=None):
                 print("引き分け！")
             break
 
+        # プレイヤー交代
         current_player = 3 - current_player
-        draw_board(canvas, board)
 
     display(canvas)
 
