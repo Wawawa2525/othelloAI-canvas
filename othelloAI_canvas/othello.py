@@ -85,14 +85,31 @@ def move_stone(board, stone, x, y):
 
     return moves
 
+class BaseAI:
+    """
+    AIクラスの基底クラス。すべてのAIはこのクラスを継承する必要があります。
+    """
+    def face(self):
+        return "🤖"
+
+    def place(self, board, stone):
+        """
+        石を置く位置を決定するメソッド。子クラスで実装する必要があります。
+        """
+        raise NotImplementedError("AIクラスはplaceメソッドを実装してください")
+
 # PandaAIクラス
-class PandaAI(object):
+class PandaAI(BaseAI):
     def face(self):
         return "🐼"
 
     def place(self, board, stone):
-        x, y = random_place(board, stone)
-        return x, y
+        move = random_place(board, stone)
+        if move is not None:
+            return move
+        else:
+            return None  # 置ける場所がない場合
+
 
 # ボードを描画する関数
 def draw_board(canvas, board):
@@ -130,18 +147,26 @@ def ai_vs_ai(ai_black, ai_white, board=None):
     ai = {BLACK: ai_black, WHITE: ai_white}
 
      while True:
+        # 現在のプレイヤーが石を置けるか確認
         if can_place(board, current_player):
-            x, y = ai[current_player].place(board, current_player)
-            if not can_place_x_y(board, current_player, x, y):
-                print(f"AI {ai[current_player].face()} が無効な場所に置こうとしました: ({x}, {y})")
-                print(f"AI {ai[current_player].face()} の反則負けです！")
-                break
-            move_stone(board, current_player, x, y)
-            print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+            move = ai[current_player].place(board, current_player)
+            if move is None:
+                print(f"AI {ai[current_player].face()} は置ける場所がありません")
+            else:
+                x, y = move
+                if not can_place_x_y(board, current_player, x, y):
+                    print(f"AI {ai[current_player].face()} が無効な場所に置こうとしました: ({x}, {y})")
+                    print(f"AI {ai[current_player].face()} の反則負けです！")
+                    break
+                move_stone(board, current_player, x, y)
+                print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+                draw_board(canvas, board)
         else:
-            print(f"AI {ai[current_player].face()} は置ける場所がありません: スキップ")
+            print(f"AI {ai[current_player].face()} は置ける場所がないためスキップします")
 
+        # ゲーム終了条件の確認
         if not can_place(board, BLACK) and not can_place(board, WHITE):
+            draw_board(canvas, board)  # 最後の状態を描画
             black_score = sum(row.count(BLACK) for row in board)
             white_score = sum(row.count(WHITE) for row in board)
             print(f"ゲーム終了！黒: {black_score}, 白: {white_score}")
@@ -153,8 +178,8 @@ def ai_vs_ai(ai_black, ai_white, board=None):
                 print("引き分け！")
             break
 
+        # プレイヤー交代
         current_player = 3 - current_player
-        draw_board(canvas, board)
 
     display(canvas)
 
