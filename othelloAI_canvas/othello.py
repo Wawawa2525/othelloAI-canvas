@@ -129,8 +129,9 @@ def ai_vs_ai(ai_black, ai_white, board=None):
     current_player = BLACK
     ai = {BLACK: ai_black, WHITE: ai_white}
 
-     while True:
-        # 現在のプレイヤーが石を置けるか確認
+     last_move_made = False
+
+    while True:
         if can_place(board, current_player):
             move = ai[current_player].place(board, current_player)
             if move is not None:
@@ -138,12 +139,14 @@ def ai_vs_ai(ai_black, ai_white, board=None):
                 move_stone(board, current_player, x, y)
                 print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
                 draw_board(canvas, board)
+                last_move_made = True  # 最後の手が置かれたフラグ
         else:
             print(f"AI {ai[current_player].face()} は置ける場所がないためスキップします")
 
         # ゲーム終了条件の確認
         if not can_place(board, BLACK) and not can_place(board, WHITE):
-            draw_board(canvas, board)  # 最後の状態を描画
+            if last_move_made:  # 最後の手が置かれた後に描画
+                draw_board(canvas, board)
             black_score = sum(row.count(BLACK) for row in board)
             white_score = sum(row.count(WHITE) for row in board)
             print(f"ゲーム終了！黒: {black_score}, 白: {white_score}")
@@ -158,9 +161,10 @@ def ai_vs_ai(ai_black, ai_white, board=None):
         # プレイヤー交代
         current_player = 3 - current_player
 
+    # 最終状態の描画
+    draw_board(canvas, board)
     display(canvas)
 
-# メイン関数
 if __name__ == "__main__":
     ai_black = PandaAI()
     ai_white = PandaAI()
