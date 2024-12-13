@@ -102,13 +102,14 @@ def draw_board(canvas, board):
         for x, stone in enumerate(row):
             cx = x * grid + grid // 2
             cy = y * grid + grid // 2
-            ctx.fillStyle = "green"
-            ctx.fillRect(x * grid, y * grid, grid, grid)
+            #ctx.fillStyle = "green"
+            #ctx.fillRect(x * grid, y * grid, grid, grid)
             if stone != 0:
                 ctx.beginPath()
-                ctx.arc(cx, cy, grid // 3, 0, 2 * math.pi)
+                ctx.arc(cx, cy, grid // 2, 0, 2 * math.pi)
                 ctx.fillStyle = "black" if stone == BLACK else "white"
                 ctx.fill()
+width=300
 
 # AI同士の対戦を行う関数
 def ai_vs_ai(ai_black, ai_white, board=None):
