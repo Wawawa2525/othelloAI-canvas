@@ -146,8 +146,7 @@ def ai_vs_ai(ai_black, ai_white, board=None):
     current_player = BLACK
     ai = {BLACK: ai_black, WHITE: ai_white}
 
-     while True:
-        # 現在のプレイヤーが石を置けるか確認
+    while True:  # インデントが正しいか確認
         if can_place(board, current_player):
             move = ai[current_player].place(board, current_player)
             if move is None:
@@ -182,6 +181,7 @@ def ai_vs_ai(ai_black, ai_white, board=None):
         current_player = 3 - current_player
 
     display(canvas)
+
 
 
 if __name__ == "__main__":
