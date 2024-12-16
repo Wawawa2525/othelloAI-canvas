@@ -2,7 +2,6 @@ from .canvas import Canvas
 import math
 import random
 
-# 定数定義
 BLACK = 1
 WHITE = 2
 
@@ -16,13 +15,21 @@ board = [
     [0, 0, 0, 0, 0, 0],
 ]
 
-# 石を置けるか確認する関数
 def can_place_x_y(board, stone, x, y):
+    """
+    石を置けるかどうかを調べる関数。
+    board: 2次元配列のオセロボード
+    x, y: 石を置きたい座標 (0-indexed)
+    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
+    return: 置けるなら True, 置けないなら False
+    """
     if board[y][x] != 0:
-        return False
+        return False  # 既に石がある場合は置けない
 
-    opponent = 3 - stone
-    directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+    opponent = 3 - stone  # 相手の石 (1なら2、2なら1)
+    directions = [(-1, -1), (-1, 0), (-1, 1),
+                  (0, -1),         (0, 1),
+                  (1, -1),  (1, 0),  (1, 1)]
 
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
@@ -34,40 +41,60 @@ def can_place_x_y(board, stone, x, y):
             found_opponent = True
 
         if found_opponent and 0 <= nx < len(board[0]) and 0 <= ny < len(board) and board[ny][nx] == stone:
-            return True
+            return True  # 石を置ける条件を満たす
 
     return False
 
-# 石を置ける場所があるか確認
 def can_place(board, stone):
+    """
+    石を置ける場所を調べる関数。
+    board: 2次元配列のオセロボード
+    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
+    """
     for y in range(len(board)):
         for x in range(len(board[0])):
             if can_place_x_y(board, stone, x, y):
                 return True
     return False
 
-# ランダムに石を置く関数
 def random_place(board, stone):
-    while True:
-        x = random.randint(0, len(board[0]) - 1)
-        y = random.randint(0, len(board) - 1)
-        if can_place_x_y(board, stone, x, y):
-            return x, y
+    """
+    石をランダムに置く関数。
+    board: 2次元配列のオセロボード
+    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
+    """
+    valid_moves = [
+        (x, y)
+        for y in range(len(board))
+        for x in range(len(board[0]))
+        if can_place_x_y(board, stone, x, y)
+    ]
+    if valid_moves:
+        return random.choice(valid_moves)
+    return None  # 置ける場所がない場合
 
-# 盤面をコピーする関数
 def copy(board):
+    """
+    盤面をコピーする関数。
+    board: 2次元配列のオセロボード
+    """
     return [row[:] for row in board]
 
-# 石を置き、ひっくり返す関数
 def move_stone(board, stone, x, y):
-    moves = [copy(board)]
+    """
+    石を置き、ひっくり返す関数。
+    board: 2次元配列のオセロボード
+    x, y: 石を置きたい座標 (0-indexed)
+    stone: 現在のプレイヤーの石 (1: 黒, 2: 白)
+    """
     if not can_place_x_y(board, stone, x, y):
-        return moves
+        return board  # 置けない場合は何もしない
 
-    board[y][x] = stone
-    moves.append(copy(board))
+    board[y][x] = stone  # 石を置く
     opponent = 3 - stone
-    directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+    directions = [(-1, -1), (-1, 0), (-1, 1),
+                  (0, -1),         (0, 1),
+                  (1, -1),  (1, 0),  (1, 1)]
 
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
@@ -81,23 +108,37 @@ def move_stone(board, stone, x, y):
         if stones_to_flip and 0 <= nx < len(board[0]) and 0 <= ny < len(board) and board[ny][nx] == stone:
             for flip_x, flip_y in stones_to_flip:
                 board[flip_y][flip_x] = stone
-                moves.append(copy(board))
 
-    return moves
+    return board
 
-# PandaAIクラス
-class PandaAI(object):
+class BaseAI:
+    """
+    AIクラスの基底クラス。すべてのAIはこのクラスを継承する必要があります。
+    """
+    def face(self):
+        return "🤖"
+
+    def place(self, board, stone):
+        """
+        石を置く場所を選ぶ関数。子クラスで実装する必要があります。
+        """
+        raise NotImplementedError("AIクラスはplaceメソッドを実装してください")
+
+class PandaAI(BaseAI):
     def face(self):
         return "🐼"
 
     def place(self, board, stone):
-        x, y = random_place(board, stone)
-        return x, y
+        move = random_place(board, stone)
+        if move is not None:
+            return move
+        return None
 
-# ボードを描画する関数
 def draw_board(canvas, board):
     ctx = canvas.getContext("2d")
     grid = canvas.width // len(board)
+    stone_radius = grid // 2.5
+
     for y, row in enumerate(board):
         for x, stone in enumerate(row):
             cx = x * grid + grid // 2
@@ -106,11 +147,10 @@ def draw_board(canvas, board):
             ctx.fillRect(x * grid, y * grid, grid, grid)
             if stone != 0:
                 ctx.beginPath()
-                ctx.arc(cx, cy, grid // 3, 0, 2 * math.pi)
+                ctx.arc(cx, cy, stone_radius, 0, 2 * math.pi)
                 ctx.fillStyle = "black" if stone == BLACK else "white"
                 ctx.fill()
 
-# AI同士の対戦を行う関数
 def ai_vs_ai(ai_black, ai_white, board=None):
     if board is None:
         board = [
@@ -130,17 +170,23 @@ def ai_vs_ai(ai_black, ai_white, board=None):
 
     while True:
         if can_place(board, current_player):
-            x, y = ai[current_player].place(board, current_player)
-            if not can_place_x_y(board, current_player, x, y):
-                print(f"AI {ai[current_player].face()} が無効な場所に置こうとしました: ({x}, {y})")
-                print(f"AI {ai[current_player].face()} の反則負けです！")
-                break
-            move_stone(board, current_player, x, y)
-            print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+            move = ai[current_player].place(board, current_player)
+            if move is None:
+                print(f"AI {ai[current_player].face()} は置ける場所がありません")
+            else:
+                x, y = move
+                if not can_place_x_y(board, current_player, x, y):
+                    print(f"AI {ai[current_player].face()} が無効な場所に置こうとしました: ({x}, {y})")
+                    print(f"AI {ai[current_player].face()} の反則負けです！")
+                    break
+                move_stone(board, current_player, x, y)
+                print(f"{ai[current_player].face()} が ({x}, {y}) に石を置きました")
+                draw_board(canvas, board)
         else:
-            print(f"AI {ai[current_player].face()} は置ける場所がありません: スキップ")
+            print(f"AI {ai[current_player].face()} は置ける場所がないためスキップします")
 
         if not can_place(board, BLACK) and not can_place(board, WHITE):
+            draw_board(canvas, board)
             black_score = sum(row.count(BLACK) for row in board)
             white_score = sum(row.count(WHITE) for row in board)
             print(f"ゲーム終了！黒: {black_score}, 白: {white_score}")
@@ -153,12 +199,5 @@ def ai_vs_ai(ai_black, ai_white, board=None):
             break
 
         current_player = 3 - current_player
-        draw_board(canvas, board)
 
     display(canvas)
-
-# メイン関数
-if __name__ == "__main__":
-    ai_black = PandaAI()
-    ai_white = PandaAI()
-    ai_vs_ai(ai_black, ai_white)
